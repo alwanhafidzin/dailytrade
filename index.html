@@ -1,1 +1,597 @@
 
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Trading Level Game — Clean Mood Panel + Custom Music</title>
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#070b17;--p1:#0b1222;--p2:#16243b;--tx:#e5e7eb;--mu:#94a3b8;--br:#38bdf8;--ac:#facc15;--ok:#22c55e;--bad:#ef4444;--wr:#eab308}
+*{box-sizing:border-box}
+body{margin:0;background:radial-gradient(900px 600px at 10% -10%,rgba(56,189,248,.12),transparent),var(--bg);color:var(--tx);font-family:'Press Start 2P',monospace;letter-spacing:.3px}
+.wrap{max-width:1240px;margin:16px auto;padding:0 12px}
+h1{margin:0 0 6px;text-align:center;color:var(--br);text-shadow:0 2px 0 #0ea5e9,0 0 12px rgba(56,189,248,.45);font-size:20px}
+.sub{color:var(--mu);text-align:center;font-size:11px;margin-bottom:8px}
+.top{display:flex;justify-content:space-between;gap:8px;align-items:center;margin-bottom:8px;flex-wrap:wrap}
+.right{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.btn{cursor:pointer;border:1px solid rgba(255,255,255,.15);border-radius:10px;padding:8px 10px;background:linear-gradient(180deg,#1d4ed8,#1e40af);color:#fff}
+.btn.ghost{background:transparent;border-style:dashed}
+.btn.bad{background:linear-gradient(180deg,#7f1d1d,#450a0a);border-color:#ef4444}
+.btn.ok{background:linear-gradient(180deg,#166534,#065f46);border-color:#22c55e}
+.btn.warn{background:linear-gradient(180deg,#854d0e,#713f12);border-color:#f59e0b}
+.badge{display:inline-block;padding:4px 8px;border-radius:999px;border:1px solid rgba(255,255,255,.18);font-size:10px}
+.badge.ok{background:rgba(34,197,94,.12);border-color:rgba(34,197,94,.35);color:#86efac}
+.badge.warn{background:rgba(234,179,8,.12);border-color:rgba(234,179,8,.35);color:#fde68a}
+.badge.info{background:rgba(56,189,248,.12);border-color:rgba(56,189,248,.35);color:#7dd3fc}
+.badge.err{background:rgba(239,68,68,.12);border-color:rgba(239,68,68,.35);color:#fecaca}
+.card{background:linear-gradient(180deg,rgba(148,163,184,.06),transparent),var(--p1);border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:12px;margin-top:10px}
+.card h2{margin:0 0 8px;font-size:13px;color:var(--ac)}
+.grid{display:grid;grid-template-columns:1.1fr .9fr;gap:10px}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+label{display:block;margin:6px 0 4px;color:var(--mu);font-size:10px}
+input,select,textarea{width:100%;background:#0b1222;color:#e5e7eb;border:1px solid rgba(255,255,255,.12);border-radius:10px;padding:8px 10px;font-family:'Press Start 2P',monospace;font-size:11px}
+textarea{min-height:60px}
+.stats{display:grid;grid-template-columns:repeat(6,1fr);gap:8px}
+.stat{background:var(--p2);border:1px solid rgba(255,255,255,.08);border-radius:12px;padding:10px;text-align:center}
+.k{font-size:10px;color:var(--mu)}.v{font-size:16px;margin-top:4px}
+.prog{height:16px;background:#0b1222;border:1px solid rgba(255,255,255,.12);border-radius:999px;overflow:hidden}
+.prog>i{display:block;height:100%;background:linear-gradient(90deg,#3b82f6,#06b6d4);width:0%}
+table{width:100%;border-collapse:separate;border-spacing:0 8px;font-size:11px}
+thead th{color:#cbd5e1;text-align:left;padding:8px 10px}
+tbody tr{background:#0b1222;border:1px solid rgba(255,255,255,.08)}
+tbody td{padding:8px 10px;vertical-align:middle}
+tbody tr td:first-child{border-radius:12px 0 0 12px}
+tbody tr td:last-child{border-radius:0 12px 12px 0}
+.pill{padding:4px 8px;border-radius:999px;border:1px solid rgba(255,255,255,.15);display:inline-block}
+.p-profit{color:#86efac;border-color:rgba(34,197,94,.35);background:rgba(34,197,94,.12)}
+.p-loss{color:#fecaca;border-color:rgba(239,68,68,.35);background:rgba(239,68,68,.12)}
+.p-mini{color:#fde68a;border-color:rgba(234,179,8,.35);background:rgba(234,179,8,.12)}
+.p-neutral{color:#cbd5e1;border-color:rgba(203,213,225,.35);background:rgba(203,213,225,.10)}
+.pager{display:flex;gap:8px;justify-content:flex-end;align-items:center}
+.stars{font-size:16px}.stars.green{color:var(--ok)}.stars.yellow{color:var(--wr)}.stars.red{color:var(--bad)}
+.actions{display:flex;gap:6px;justify-content:flex-end}
+.range{accent-color:#38bdf8}
+@media(max-width:1000px){.grid{grid-template-columns:1fr}.stats{grid-template-columns:repeat(3,1fr)}}
+.mm-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:8px}
+.small{font-size:10px;color:#94a3b8}
+/* Mood panel polished */
+.mood-panel{display:flex;align-items:center;gap:14px;background:linear-gradient(180deg,rgba(148,163,184,.08),rgba(148,163,184,.03));border:1px solid rgba(255,255,255,.10);border-radius:12px;padding:12px}
+.mood-emoji{font-size:30px;line-height:1.1}
+.mood-info{display:flex;flex-direction:column;gap:6px}
+.mood-title{font-size:13px;color:#cbd5e1;display:flex;align-items:center;gap:8px}
+.mood-name{font-size:18px}
+.mood-time{font-size:10px;color:#94a3b8}
+/* Tracks table */
+#tracksTbl thead th{padding:8px 10px}
+#tracksTbl tbody td{padding:8px 10px}
+.badge.def{background:rgba(250,204,21,.12);border-color:rgba(250,204,21,.35);color:#fde68a}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>⚔️ Trading Level Game</h1>
+  <div class="sub">Profit = +1 XP • Mini Lose = −1 XP • Mistake = −10 XP • No Trade = 0 • Lv XP tiap 10 XP • Lv Profit tiap 10 Profit</div>
+
+  <div class="top">
+    <div>
+      <span class="badge info" id="sourceBadge">Loading…</span>
+      <span class="badge warn" id="unsavedBadge" style="display:none">Perubahan lokal tersimpan</span>
+      <span class="badge ok" id="syncOk" style="display:none">Tersimpan ✓</span>
+    </div>
+    <div class="right">
+      <!-- Keep the same buttons/ids -->
+      <button id="musicToggle" class="btn ghost">Music: OFF</button>
+      <select id="trackSelect" title="Pilih Musik Custom" style="max-width:260px">
+        <option value="-1">— Pilih track —</option>
+      </select>
+      <button id="nextTrackBtn" class="btn ghost" title="Track berikut">Next ▶</button>
+      <label style="font-size:10px">Vol <input id="vol" type="range" min="0" max="1" step="0.01" value="0.3" class="range" style="vertical-align:middle"></label>
+      <button id="exportBtn" class="btn ghost">Export .json</button>
+      <label class="btn ghost" for="importFile" style="cursor:pointer">Import .json
+        <input id="importFile" type="file" accept="application/json" style="display:none">
+      </label>
+    </div>
+  </div>
+
+  <!-- DASHBOARD -->
+  <section class="card">
+    <h2>🏆 Dashboard (ikut filter waktu untuk statistik)</h2>
+    <div class="stats" style="margin-bottom:8px">
+      <div class="stat"><div class="k">🟢 Profit</div><div class="v" id="lbWins">0</div></div>
+      <div class="stat"><div class="k">🟠 Mini Lose</div><div class="v" id="lbMini">0</div></div>
+      <div class="stat"><div class="k">🔴 Mistake</div><div class="v" id="lbLosses">0</div></div>
+      <div class="stat"><div class="k">📊 Winrate</div><div class="v" id="lbWinrate">0%</div></div>
+      <div class="stat"><div class="k">⭐ Trust</div><div class="v"><span id="trustStars" class="stars">★★★★★</span> <span id="trustScore" style="font-size:11px"></span></div></div>
+      <div class="stat"><div class="k">📈 Trades</div><div class="v" id="lbTrades">0</div></div>
+    </div>
+
+    <div class="mood-panel" id="moodPanel">
+      <div class="mood-emoji" id="latestMoodEmoji">—</div>
+      <div class="mood-info">
+        <div class="mood-title">● Mood Terakhir <span class="mood-name" id="latestMoodText"></span></div>
+        <div class="mood-time" id="latestMoodTime"></div>
+      </div>
+    </div>
+
+    <div class="stats" style="margin-top:8px">
+      <div class="stat"><div class="k">🎮 Level (XP)</div><div class="v" id="levelXp">1</div></div>
+      <div class="stat"><div class="k">⭐ Level (Profit)</div><div class="v" id="levelProfit">1</div></div>
+      <div class="stat"><div class="k">XP Total</div><div class="v" id="totalXp">0</div></div>
+      <div class="stat"><div class="k">Profit Count</div><div class="v" id="profitCount">0</div></div>
+      <div class="stat"><div class="k">P&L Total</div><div class="v" id="pnlTotal">Rp 0</div></div>
+      <div class="stat"><div class="k">Saldo Saat Ini</div><div class="v" id="currentBal">Rp 0</div></div>
+    </div>
+
+    <label style="margin-top:8px">Progress XP</label><div class="prog"><i id="progressXp" style="width:0%"></i></div>
+    <label style="margin-top:8px">Progress PROFIT</label><div class="prog"><i id="progressProfit" style="width:0%"></i></div>
+  </section>
+
+  <section class="grid">
+    <div class="card">
+      <h2>➕ Catat / Edit Aktivitas</h2>
+      <div class="row">
+        <div><label>Waktu</label><input type="datetime-local" id="dateInput"></div>
+        <div><label>Hasil</label>
+          <select id="typeInput">
+            <option value="profit">Profit (+1)</option>
+            <option value="minilose">Mini Lose (−1)</option>
+            <option value="mistake">Mistake (−10)</option>
+            <option value="neutral">No Trade (0)</option>
+          </select>
+        </div>
+      </div>
+      <div class="row">
+        <div><label>Koin</label>
+          <input list="coinList" id="coinInput" placeholder="BTCUSDT / ETHUSDT / ...">
+          <datalist id="coinList">
+            <option>BTCUSDT</option><option>ETHUSDT</option><option>SOLUSDT</option><option>BNBUSDT</option><option>XRPUSDT</option>
+            <option>DOGEUSDT</option><option>ADAUSDT</option><option>MATICUSDT</option><option>PEPEUSDT</option><option>TONUSDT</option>
+          </datalist>
+        </div>
+        <div><label>P&L Hari Ini (Rp)</label><input type="number" id="pnlInput" placeholder="450000 atau -250000" step="1"></div>
+      </div>
+      <div class="row">
+        <div style="grid-column:1/3"><label>Catatan</label><input type="text" id="noteInput" placeholder="sabar/terburu-buru/dll"></div>
+      </div>
+      <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:8px">
+        <button id="saveLogBtn" class="btn ok">Tambah</button>
+        <button id="cancelLogEditBtn" class="btn warn" style="display:none">Batal Edit</button>
+        <button id="resetBtn" class="btn bad">Reset Semua</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>💰 Keuangan & Level</h2>
+      <div class="row">
+        <div><label>Saldo Awal (Rp)</label><input type="number" id="initBalInput" placeholder="3000000" step="1"></div>
+        <div style="display:flex;gap:8px;align-items:end"><button id="saveInitBtn" class="btn ok">Simpan</button><span id="saveHint" class="sub" style="font-size:10px"></span></div>
+      </div>
+      <div class="row">
+        <div><label>Waktu Cashflow</label><input type="datetime-local" id="cfDate"></div>
+        <div><label>Jenis</label><select id="cfType"><option value="deposit">Deposit</option><option value="withdraw">Tarik</option></select></div>
+      </div>
+      <div class="row">
+        <div><label>Jumlah (Rp)</label><input type="number" id="cfAmount" step="1"></div>
+        <div><label>Catatan</label><input type="text" id="cfNote" placeholder="isi/tarik modal"></div>
+      </div>
+      <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:8px">
+        <button id="saveCashflowBtn" class="btn ok">Tambah Cashflow</button>
+        <button id="cancelCfEditBtn" class="btn warn" style="display:none">Batal Edit</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- MOOD CRUD -->
+  <section class="card">
+    <h2>🧠 Mood Harian (Emoji CRUD)</h2>
+    <div class="row">
+      <div><label>Waktu</label><input type="datetime-local" id="moodDate"></div>
+      <div><label>Mood</label>
+        <select id="moodSelect">
+          <option value="calm">😌 Calm</option>
+          <option value="focus" selected>🎯 Focus</option>
+          <option value="tense">😬 Tense</option>
+          <option value="euphoric">🤩 Euphoric</option>
+          <option value="tired">😴 Tired</option>
+          <option value="tilt">😡 Tilt</option>
+        </select>
+      </div>
+    </div>
+    <div class="row">
+      <div style="grid-column:1/3"><label>Catatan</label><input type="text" id="moodNote" placeholder="kenapa mood ini?"></div>
+    </div>
+    <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:8px">
+      <button id="saveMoodBtn" class="btn ok">Tambah Mood</button>
+      <button id="cancelMoodEditBtn" class="btn warn" style="display:none">Batal Edit</button>
+    </div>
+
+    <table style="margin-top:8px">
+      <thead><tr><th style="width:170px">Waktu</th><th style="width:160px">Mood</th><th>Catatan</th><th style="width:180px;text-align:right">Aksi</th></tr></thead>
+      <tbody id="moodTbody"></tbody>
+    </table>
+  </section>
+
+  <section class="card">
+    <h2>🗂️ Riwayat Trading</h2>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:end;margin-bottom:8px">
+      <div><label>Dari</label><input type="datetime-local" id="startFilter"></div>
+      <div><label>Sampai</label><input type="datetime-local" id="endFilter"></div>
+      <div><button id="applyFilterBtn" class="btn ghost">Filter</button><button id="clearFilterBtn" class="btn ghost">Reset</button></div>
+    </div>
+    <table>
+      <thead><tr><th style="width:170px">Waktu</th><th style="width:120px">Hasil</th><th style="width:70px">XP</th><th style="width:120px">Koin</th><th style="width:130px">P&L</th><th style="width:150px">Saldo</th><th>Catatan</th><th style="width:180px;text-align:right">Aksi</th></tr></thead>
+      <tbody id="tbody"></tbody>
+    </table>
+    <div class="pager"><button id="prevBtn" class="btn ghost">◀</button><span class="sub" id="pageInfo">Hal 1/1</span><button id="nextBtn" class="btn ghost">▶</button></div>
+  </section>
+
+  <section class="card">
+    <h2>💳 Riwayat Cashflow</h2>
+    <table>
+      <thead><tr><th style="width:170px">Waktu</th><th style="width:120px">Jenis</th><th style="width:130px">Jumlah</th><th>Catatan</th><th style="width:180px;text-align:right">Aksi</th></tr></thead>
+      <tbody id="cfTbody"></tbody>
+    </table>
+  </section>
+
+  <section class="card">
+    <h2>🎵 Custom Music</h2>
+    <div class="mm-grid">
+      <div><label>Tambah via Filename/URL</label><input id="mmFileName" placeholder="music/lagu1.mp3 atau https://..."></div>
+      <div><label>Alias (tampil di dropdown)</label><input id="mmAlias" placeholder="Judul Lagu"></div>
+      <div style="display:flex;align-items:flex-end"><button id="mmAddFileBtn" class="btn ok">Tambah Track</button></div>
+
+      <div><label>Upload Audio (lokal)</label><input id="mmUpload" type="file" accept="audio/*"></div>
+      <div><label>Alias Upload</label><input id="mmAlias2" placeholder="Judul Lagu Upload"></div>
+      <div style="display:flex;align-items:flex-end"><button id="mmAddUploadBtn" class="btn ok">Tambah Upload</button></div>
+
+      <div><label>Default Music (filename)</label><input id="defaultMusicFile" placeholder="music/lagu1.mp3"></div>
+      <div style="display:flex;align-items:flex-end"><button id="setDefaultBtn" class="btn ghost">Set Default</button></div>
+      <div class="small" style="grid-column:1/-1">Catatan: Upload lokal hanya berlaku selama halaman terbuka. Untuk permanen, taruh file di hosting sendiri/repo dan tambahkan via filename/URL.</div>
+    </div>
+
+    <table id="tracksTbl" style="margin-top:10px">
+      <thead><tr><th>Alias</th><th>File/URL</th><th style="width:120px">Status</th><th style="width:220px;text-align:right">Aksi</th></tr></thead>
+      <tbody id="tracksTbody"></tbody>
+    </table>
+  </section>
+</div>
+
+<script>
+// ---------- Util ----------
+const nf=new Intl.NumberFormat('id-ID',{style:'currency',currency:'IDR',maximumFractionDigits:0});
+const PAGE_SIZE=10;
+const $=id=>document.getElementById(id);
+const fmtDT=(s)=>{ if(!s) return ''; const d=new Date(s); if(String(s).length===10 && s.includes('-')) return s; const pad=(n)=>String(n).padStart(2,'0'); return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate())+' '+pad(d.getHours())+':'+pad(d.getMinutes()); };
+const toDTLocal=(s)=>{ if(!s) return ''; const d=new Date(s); const pad=(n)=>String(n).padStart(2,'0'); return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate())+'T'+pad(d.getHours())+':'+pad(d.getMinutes()); };
+const nowLocal=()=>{ const d=new Date(); const pad=(n)=>String(n).padStart(2,'0'); return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate())+'T'+pad(d.getHours())+':'+pad(d.getMinutes()); };
+const parseDT=(s)=>{ if(!s) return 0; if(s.length===10) return new Date(s+'T00:00').getTime(); return new Date(s).getTime(); };
+function baseName(path){ return (path||'').split('/').pop(); }
+
+// ---------- Mood Map ----------
+const MOODS=[
+  {key:'calm', emoji:'😌', label:'Calm'},
+  {key:'focus', emoji:'🎯', label:'Focus'},
+  {key:'tense', emoji:'😬', label:'Tense'},
+  {key:'euphoric', emoji:'🤩', label:'Euphoric'},
+  {key:'tired', emoji:'😴', label:'Tired'},
+  {key:'tilt', emoji:'😡', label:'Tilt'}
+];
+function moodInfo(key){ return MOODS.find(m=>m.key===key) || {emoji:'—',label:'Unknown'}; }
+
+// ---------- Data Layer ----------
+const DEFAULT_DB=()=>({version:9, initialBalance:0, prevProfitLevel:1,
+  settings:{ musicOn:false, volume:0.3, trackIndex:-1, defaultMusicFile:'' },
+  logs:[], cashflows:[], tracks:[], moods:[]
+});
+let DB=DEFAULT_DB();
+let SOURCE='new';
+let dirty=false;
+
+// ---------- Boot ----------
+async function boot(){
+  try{
+    const resp=await fetch('data.json',{cache:'no-store'});
+    if(resp.ok){
+      const j=await resp.json();
+      DB = Object.assign(DEFAULT_DB(), j||{});
+      if(!Array.isArray(DB.moods)) DB.moods=[];
+      SOURCE='json';
+    }else{
+      const cached=localStorage.getItem('tlg_data');
+      if(cached){ DB=Object.assign(DEFAULT_DB(), JSON.parse(cached)); SOURCE='local'; }
+      else { DB=DEFAULT_DB(); SOURCE='new'; dirty=true; }
+    }
+  }catch(e){
+    const cached=localStorage.getItem('tlg_data');
+    if(cached){ DB=Object.assign(DEFAULT_DB(), JSON.parse(cached)); SOURCE='local'; }
+    else { DB=DEFAULT_DB(); SOURCE='new'; dirty=true; }
+  }
+  hydrateUI();
+  render();
+}
+function markDirty(){ dirty=true; localStorage.setItem('tlg_data', JSON.stringify(DB)); $('unsavedBadge').style.display='inline-block'; $('syncOk').style.display='none'; }
+function clearDirty(){ dirty=false; $('unsavedBadge').style.display='none'; $('syncOk').style.display='inline-block'; setTimeout(()=>$('syncOk').style.display='none',1200); }
+function setSourceBadge(){
+  const el=$('sourceBadge');
+  if(SOURCE==='json'){ el.textContent='Loaded: data.json (remote)'; el.className='badge ok'; }
+  else if(SOURCE==='local'){ el.textContent='Loaded: localStorage'; el.className='badge ok'; }
+  else { el.textContent='New dataset (belum ada data.json)'; el.className='badge warn'; }
+}
+
+// ---------- Music (custom only) ----------
+let currentAudio=null;
+let lastBuiltCount = 0; // to avoid rebuilding list unnecessarily
+function findDefaultTrackIndex(){
+  const def = (DB.settings.defaultMusicFile||'').trim();
+  if(!def) return -1;
+  const i = DB.tracks.findIndex(t => (t.file && t.file===def) || (t.url && (t.url===def || t.url.endsWith('/'+def) || t.url.endsWith(def))));
+  return i;
+}
+function forceSelectDefaultIfExists(){
+  const idx = findDefaultTrackIndex();
+  if(idx>=0){ DB.settings.trackIndex = idx; return true; }
+  return false;
+}
+function toggleMusic(){
+  DB.settings.musicOn=!DB.settings.musicOn; markDirty();
+  if(DB.settings.musicOn){
+    // pick default on first ON
+    forceSelectDefaultIfExists();
+    startMusic();
+    // do NOT rebuild options; just set the dropdown value to current index
+    if(DB.settings.trackIndex>=0) $('trackSelect').value=String(DB.settings.trackIndex);
+  } else {
+    stopMusic();
+  }
+  updateMusicHeaderOnly();
+}
+function startMusic(){
+  stopMusic();
+  let idx=DB.settings.trackIndex ?? -1;
+  if(idx<0 || idx>=DB.tracks.length){
+    if(!forceSelectDefaultIfExists() && DB.tracks.length>0){ DB.settings.trackIndex=0; idx=0; }
+    else idx=DB.settings.trackIndex;
+  }
+  if(idx>=0){
+    const t=DB.tracks[idx];
+    const a=new Audio(t.url); a.loop=true; a.volume=DB.settings.volume||0.3; a.play(); currentAudio=a;
+  }
+}
+function stopMusic(){ if(currentAudio){ currentAudio.pause(); currentAudio=null; } }
+function nextTrack(){
+  if(DB.tracks.length===0) return alert('Tidak ada track custom');
+  let idx=(DB.settings.trackIndex ?? -1)+1; if(idx>=DB.tracks.length) idx=0;
+  DB.settings.trackIndex=idx; markDirty();
+  $('trackSelect').value=String(idx);
+  if(DB.settings.musicOn){ startMusic(); }
+  updateTracksTable();
+}
+function setVolume(v){ if(currentAudio){ currentAudio.volume=v; } DB.settings.volume=v; markDirty(); }
+function rebuildTrackSelect(preserveValue=true){
+  const sel=$('trackSelect');
+  const oldVal = preserveValue ? sel.value : null;
+  sel.innerHTML='<option value="-1">— Pilih track —</option>';
+  (DB.tracks||[]).forEach((t,i)=>{ const alias=t.name||t.file||('Track '+(i+1)); const fn=t.file?` (${t.file})`:(t.url?` (${baseName(t.url)})`:''); const op=document.createElement('option'); op.value=String(i); op.textContent=alias+fn; sel.appendChild(op); });
+  if(preserveValue && oldVal!==null) sel.value=oldVal;
+  lastBuiltCount = DB.tracks.length;
+}
+function updateMusicHeaderOnly(){
+  $('musicToggle').textContent='Music: '+(DB.settings.musicOn?'ON':'OFF'); $('musicToggle').className='btn '+(DB.settings.musicOn?'ok':'ghost');
+  $('vol').value=DB.settings.volume||0.3;
+}
+function updateFullMusicUI(){
+  updateMusicHeaderOnly();
+  if(DB.tracks.length!==lastBuiltCount){ rebuildTrackSelect(true); }
+  $('defaultMusicFile').value=DB.settings.defaultMusicFile||'';
+  updateTracksTable();
+}
+function updateTracksTable(){
+  const tb=$('tracksTbody'); tb.innerHTML='';
+  DB.tracks.forEach((t,i)=>{
+    const isDef = (t.file && t.file===DB.settings.defaultMusicFile) || (t.url && t.url.endsWith(DB.settings.defaultMusicFile));
+    const tr=document.createElement('tr');
+    tr.innerHTML=`<td>${t.name||t.file||('Track '+(i+1))}</td>
+                  <td title="${t.url}">${t.file || t.url}</td>
+                  <td>${isDef?'<span class="badge def">Default</span>':''}</td>
+                  <td class="actions">
+                    <button class="btn ghost" onclick="setDefaultByIndex(${i})">Set Default</button>
+                    <button class="btn bad" onclick="deleteTrack(${i})">Hapus</button>
+                  </td>`;
+    tb.appendChild(tr);
+  });
+}
+
+// ---------- CRUD + Logic (trading) ----------
+let page=1, fStart='', fEnd='', editLogId=null, editCfId=null, editMoodId=null;
+function hydrateUI(){
+  setSourceBadge();
+  $('initBalInput').value = DB.initialBalance || '';
+  $('dateInput').value = nowLocal();
+  $('cfDate').value = nowLocal();
+  $('moodDate').value = nowLocal();
+  updateFullMusicUI();
+}
+function addOrUpdateLog(){
+  const dt=$('dateInput').value, type=$('typeInput').value, coin=$('coinInput').value.trim(), note=$('noteInput').value.trim(), pnl=parseFloat($('pnlInput').value||'0');
+  if(!dt){alert('Isi waktu');return}
+  let points=0, label='';
+  if(type==='profit'){points=1;label='Profit'} else if(type==='minilose'){points=-1;label='Mini Lose'} else if(type==='mistake'){points=-10;label='Mistake'} else {label='No Trade'}
+  if(editLogId){ const it=DB.logs.find(x=>x.id===editLogId); if(!it) return; Object.assign(it,{dt,result:type,resultText:label,points,coin,note,pnl}); }
+  else{ DB.logs.push({id:String(Date.now())+Math.random().toString(16).slice(2),dt,result:type,resultText:label,points,coin,note,pnl,createdAt:Date.now()}); page=1; }
+  clearLogInputs(); markDirty(); render(true);
+}
+function onEditLog(id){ const it=DB.logs.find(x=>x.id===id); if(!it) return; editLogId=id; $('saveLogBtn').textContent='Simpan'; $('cancelLogEditBtn').style.display='inline-block'; $('dateInput').value= toDTLocal(it.dt || new Date().toISOString()); $('typeInput').value=it.result; $('pnlInput').value=it.pnl; $('noteInput').value=it.note||''; $('coinInput').value=it.coin||''; window.scrollTo({top:0,behavior:'smooth'}); }
+function onDeleteLog(id){ if(!confirm('Hapus catatan ini?')) return; DB.logs=DB.logs.filter(x=>x.id!==id); markDirty(); render(); }
+function clearLogInputs(){ editLogId=null; $('saveLogBtn').textContent='Tambah'; $('cancelLogEditBtn').style.display='none'; $('dateInput').value=nowLocal(); $('typeInput').value='profit'; $('pnlInput').value=''; $('noteInput').value=''; $('coinInput').value=''; }
+
+function addOrUpdateCashflow(){
+  const dt=$('cfDate').value, type=$('cfType').value, note=$('cfNote').value.trim(), amt=parseFloat($('cfAmount').value||'0');
+  if(!dt){alert('Isi waktu cashflow');return} if(!amt){alert('Jumlah tidak boleh nol');return}
+  const amount=(type==='withdraw')?-Math.abs(amt):Math.abs(amt);
+  if(editCfId){ const cf=DB.cashflows.find(x=>x.id===editCfId); if(!cf) return; Object.assign(cf,{dt,type,note,amount}); }
+  else { DB.cashflows.push({id:'cf_'+String(Date.now())+Math.random().toString(16).slice(2),dt,type,note,amount,createdAt:Date.now()}); }
+  clearCfInputs(); markDirty(); render();
+}
+function onEditCf(id){ const cf=DB.cashflows.find(x=>x.id===id); if(!cf) return; editCfId=id; $('saveCashflowBtn').textContent='Simpan Cashflow'; $('cancelCfEditBtn').style.display='inline-block'; $('cfDate').value= toDTLocal(cf.dt || new Date().toISOString()); $('cfType').value=cf.type; $('cfAmount').value=Math.abs(cf.amount); $('cfNote').value=cf.note||''; }
+function onDeleteCf(id){ if(!confirm('Hapus cashflow?')) return; DB.cashflows=DB.cashflows.filter(x=>x.id!==id); markDirty(); render(); }
+function clearCfInputs(){ editCfId=null; $('saveCashflowBtn').textContent='Tambah Cashflow'; $('cancelCfEditBtn').style.display='none'; $('cfDate').value=nowLocal(); $('cfAmount').value=''; $('cfNote').value=''; $('cfType').value='deposit'; }
+function saveInit(){ DB.initialBalance=parseFloat($('initBalInput').value||'0')||0; $('saveHint').textContent='Tersimpan ✓'; setTimeout(()=>$('saveHint').textContent='',1200); markDirty(); render(); }
+
+// Mood CRUD
+function addOrUpdateMood(){
+  const dt=$('moodDate').value, mkey=$('moodSelect').value, note=$('moodNote').value.trim();
+  if(!dt){ alert('Isi waktu mood'); return; }
+  if(editMoodId){ const it=DB.moods.find(x=>x.id===editMoodId); if(!it) return; Object.assign(it,{dt,mkey,note}); }
+  else{ DB.moods.push({id:'md_'+String(Date.now())+Math.random().toString(16).slice(2),dt,mkey,note,createdAt:Date.now()}); }
+  clearMoodInputs(); markDirty(); render();
+}
+function onEditMood(id){ const it=DB.moods.find(x=>x.id===id); if(!it) return; editMoodId=id; $('saveMoodBtn').textContent='Simpan Mood'; $('cancelMoodEditBtn').style.display='inline-block'; $('moodDate').value= toDTLocal(it.dt || new Date().toISOString()); $('moodSelect').value=it.mkey; $('moodNote').value=it.note||''; window.scrollTo({top:0,behavior:'smooth'}); }
+function onDeleteMood(id){ if(!confirm('Hapus mood ini?')) return; DB.moods=DB.moods.filter(x=>x.id!==id); markDirty(); render(); }
+function clearMoodInputs(){ editMoodId=null; $('saveMoodBtn').textContent='Tambah Mood'; $('cancelMoodEditBtn').style.display='none'; $('moodDate').value=nowLocal(); $('moodSelect').value='focus'; $('moodNote').value=''; }
+
+// Export / Import
+function exportJSON(){ const blob=new Blob([JSON.stringify(DB,null,2)],{type:'application/json'}); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='data.json'; a.click(); URL.revokeObjectURL(a.href); clearDirty(); }
+function importJSON(file){
+  const r=new FileReader();
+  r.onload=e=>{ try{ const obj=JSON.parse(e.target.result); DB=Object.assign(DEFAULT_DB(), obj||{}); SOURCE='local'; markDirty(); hydrateUI(); render(); } catch(err){ alert('File tidak valid'); } };
+  r.readAsText(file);
+}
+
+// Filters & paging
+function applyFilter(){ fStart=$('startFilter').value||''; fEnd=$('endFilter').value||''; page=1; render(); }
+function clearFilter(){ fStart=''; fEnd=''; $('startFilter').value=''; $('endFilter').value=''; page=1; render(); }
+
+// Calculations
+function recomputePoints(){
+  const asc=[...DB.logs].sort((a,b)=>{
+    const ad=parseDT(a.dt); const bd=parseDT(b.dt); return ad-bd || (a.createdAt||0)-(b.createdAt||0);
+  });
+  let pts=0, wins=0;
+  asc.forEach(it=>{ if(it.result==='profit') wins++; pts+=(it.points||0); it.total=Math.max(0,pts); it.level=Math.floor(Math.max(0,pts)/10); });
+  const totalPoints=Math.max(0,pts);
+  const profitCount=wins;
+  const levelXp=Math.max(1,1+Math.floor(totalPoints/10));
+  const levelProfit=Math.max(1,1+Math.floor(profitCount/10));
+  return {totalPoints, profitCount, levelXp, levelProfit};
+}
+function computeBalances(){
+  const events=[...DB.logs.map(x=>({k:'l',ts:parseDT(x.dt),t:x.createdAt||0,r:x})), ...DB.cashflows.map(x=>({k:'c',ts:parseDT(x.dt),t:x.createdAt||0,r:x}))]
+    .sort((a,b)=>a.ts-b.ts || a.t-b.t);
+  let bal=Number(DB.initialBalance)||0, dep=0, wdr=0, pnl=0, map={};
+  events.forEach(e=>{ if(e.k==='c'){ bal+=Number(e.r.amount||0); if(e.r.amount>0) dep+=e.r.amount; else wdr+=Math.abs(e.r.amount); } else { const p=Number(e.r.pnl||0); bal+=p; pnl+=p; map[e.r.id]=bal; } });
+  return {map,pnl,current:bal,dep,wdr};
+}
+function filteredLogs(){
+  let a=[...DB.logs];
+  if(fStart){ const s=parseDT(fStart); a=a.filter(x=>parseDT(x.dt)>=s); }
+  if(fEnd){ const e=parseDT(fEnd); a=a.filter(x=>parseDT(x.dt)<=e); }
+  a.sort((x,y)=>parseDT(y.dt)-parseDT(x.dt) || (y.createdAt||0)-(x.createdAt||0));
+  return a;
+}
+function latestMood(){
+  if(!DB.moods || DB.moods.length===0) return null;
+  return DB.moods.slice().sort((a,b)=>parseDT(b.dt)-parseDT(a.dt) || (b.createdAt||0)-(a.createdAt||0))[0];
+}
+function renderTrust(){ const mistakes=DB.logs.filter(x=>x.result==='mistake').length; const score=Math.max(0,100-10*mistakes); $('trustScore').textContent=score; let cls='green'; if(score<70) cls='red'; else if(score<90) cls='yellow'; $('trustStars').className='stars '+cls; $('trustStars').textContent='★★★★★'; }
+function renderLeaderboard(){
+  const d=filteredLogs(); const w=d.filter(x=>x.result==='profit').length; const mini=d.filter(x=>x.result==='minilose').length; const l=d.filter(x=>x.result==='mistake').length;
+  const trades=w+mini+l; $('lbWins').textContent=w; $('lbMini').textContent=mini; $('lbLosses').textContent=l; $('lbTrades').textContent=trades; $('lbWinrate').textContent=(trades?Math.round(w/trades*100):0)+'%';
+}
+function render(fromAdd=false){
+  setSourceBadge();
+  const {map,pnl,current,dep,wdr}=computeBalances();
+  const {totalPoints,profitCount,levelXp,levelProfit}=recomputePoints();
+  const basis=(DB.initialBalance||0)+(dep-wdr); const roi=basis>0?Math.round((pnl/basis)*100):0;
+
+  $('totalXp').textContent=totalPoints; $('profitCount').textContent=profitCount; $('pnlTotal').textContent=nf.format(pnl); $('currentBal').textContent=nf.format(current);
+  $('levelXp').textContent=levelXp; $('levelProfit').textContent=levelProfit;
+  $('progressXp').style.width=((totalPoints%10)*10)+'%'; $('progressProfit').style.width=((profitCount%10)*10)+'%';
+  renderLeaderboard(); renderTrust();
+
+  // Latest mood on Dashboard
+  const lm = latestMood();
+  if(lm){ const info=moodInfo(lm.mkey); $('latestMoodEmoji').textContent=info.emoji; $('latestMoodText').textContent=info.label; $('latestMoodTime').textContent='Updated: '+fmtDT(lm.dt); }
+  else { $('latestMoodEmoji').textContent='—'; $('latestMoodText').textContent='Belum ada'; $('latestMoodTime').textContent=''; }
+
+  // Levels extra display
+  $('levelXp').textContent=levelXp; $('levelProfit').textContent=levelProfit;
+
+  // Logs table
+  const data=filteredLogs(); const pages=Math.max(1,Math.ceil(data.length/PAGE_SIZE)); if(page>pages) page=pages; const rows=data.slice((page-1)*PAGE_SIZE,(page-1)*PAGE_SIZE+PAGE_SIZE);
+  const tb=$('tbody'); tb.innerHTML=''; rows.forEach(it=>{ const cls=it.result==='profit'?'p-profit':(it.result==='mistake'?'p-loss':(it.result==='minilose'?'p-mini':'p-neutral'));
+    const tr=document.createElement('tr'); tr.innerHTML=`<td>${fmtDT(it.dt)}</td><td><span class="pill ${cls}">${it.resultText}</span></td><td style="text-align:right">${it.points>0?`+${it.points}`:it.points}</td><td>${(it.coin||'').toUpperCase()}</td><td style="text-align:right">${nf.format(it.pnl||0)}</td><td style="text-align:right">${nf.format(map[it.id]||0)}</td><td>${it.note||''}</td><td class="actions"><button class="btn ghost" onclick="onEditLog('${it.id}')">Edit</button><button class="btn bad" onclick="onDeleteLog('${it.id}')">Hapus</button></td>`; tb.appendChild(tr); });
+  $('pageInfo').textContent=`Hal ${page}/${pages}`;
+
+  // Cashflow table
+  const cft=$('cfTbody'); cft.innerHTML=''; DB.cashflows.slice().sort((a,b)=>parseDT(a.dt)-parseDT(b.dt) || (a.createdAt||0)-(b.createdAt||0)).forEach(cf=>{
+    const tr=document.createElement('tr'); tr.innerHTML=`<td>${fmtDT(cf.dt)}</td><td>${cf.type==='deposit'?'Deposit':'Tarik'}</td><td style="text-align:right">${nf.format(cf.amount)}</td><td>${cf.note||''}</td><td class="actions"><button class="btn ghost" onclick="onEditCf('${cf.id}')">Edit</button><button class="btn bad" onclick="onDeleteCf('${cf.id}')">Hapus</button></td>`; cft.appendChild(tr);
+  });
+
+  // update stats bottom row
+  $('levelXp').textContent=levelXp; $('levelProfit').textContent=levelProfit;
+  $('totalXp').textContent=totalPoints; $('profitCount').textContent=profitCount;
+  $('pnlTotal').textContent=nf.format(pnl); $('currentBal').textContent=nf.format(current);
+
+  updateTracksTable();
+}
+
+// ---------- Music Manager UI ----------
+function addTrackFromFilename(){
+  const name=$('mmFileName').value.trim(); const alias=$('mmAlias').value.trim();
+  if(!name){ alert('Isi filename/URL'); return; }
+  const url = name.match(/^https?:\/\//) ? name : (name.includes('/')? name : ('music/'+name));
+  const obj={name: alias || baseName(name), url, file: baseName(name)};
+  DB.tracks.push(obj); markDirty(); rebuildTrackSelect(true); updateTracksTable(); $('mmFileName').value=''; $('mmAlias').value='';
+}
+function addTrackFromUpload(){
+  const f=$('mmUpload').files[0]; if(!f){ alert('Pilih file audio'); return; }
+  const alias=$('mmAlias2').value.trim();
+  const url=URL.createObjectURL(f);
+  const obj={name: alias || f.name, url, file: f.name};
+  DB.tracks.push(obj); markDirty(); rebuildTrackSelect(true); updateTracksTable(); $('mmUpload').value=''; $('mmAlias2').value='';
+}
+function setDefaultMusic(){ const fn=$('defaultMusicFile').value.trim(); DB.settings.defaultMusicFile = fn; markDirty(); updateTracksTable(); alert('Default music diset ke: '+fn); }
+function setDefaultByIndex(i){ const t=DB.tracks[i]; if(!t) return; DB.settings.defaultMusicFile = t.file || baseName(t.url); $('defaultMusicFile').value=DB.settings.defaultMusicFile; markDirty(); updateTracksTable(); }
+function deleteTrack(i){
+  if(!confirm('Hapus track ini?')) return;
+  const removed = DB.tracks.splice(i,1)[0];
+  // adjust current selections
+  if(DB.settings.trackIndex===i){ stopMusic(); DB.settings.trackIndex=-1; $('trackSelect').value='-1'; }
+  if(removed && (removed.file===DB.settings.defaultMusicFile)) DB.settings.defaultMusicFile='';
+  markDirty(); rebuildTrackSelect(true); updateTracksTable();
+}
+
+// ---------- Events ----------
+$('saveLogBtn').onclick=addOrUpdateLog;
+$('cancelLogEditBtn').onclick=clearLogInputs;
+$('saveCashflowBtn').onclick=addOrUpdateCashflow;
+$('cancelCfEditBtn').onclick=clearCfInputs;
+$('resetBtn').onclick=()=>{ if(!confirm('Hapus semua data (XP, P&L, cashflow, mood, tracks)?')) return; DB=DEFAULT_DB(); SOURCE='new'; markDirty(); hydrateUI(); render(); };
+$('saveInitBtn').onclick=saveInit;
+$('applyFilterBtn').onclick=applyFilter;
+$('clearFilterBtn').onclick=clearFilter;
+$('prevBtn').onclick=()=>{ if(page>1){page--; render();}};
+$('nextBtn').onclick=()=>{ page++; render();};
+$('exportBtn').onclick=exportJSON;
+$('importFile').onchange=(e)=>{ if(e.target.files[0]) importJSON(e.target.files[0]); };
+
+// Music
+$('musicToggle').onclick=toggleMusic;
+$('trackSelect').onchange=(e)=>{ DB.settings.trackIndex=parseInt(e.target.value,10); markDirty(); if(DB.settings.musicOn){ startMusic(); } };
+$('nextTrackBtn').onclick=nextTrack;
+$('vol').oninput=(e)=>setVolume(parseFloat(e.target.value));
+
+// Music Manager
+$('mmAddFileBtn').onclick=addTrackFromFilename;
+$('mmAddUploadBtn').onclick=addTrackFromUpload;
+$('setDefaultBtn').onclick=setDefaultMusic;
+
+// Mood
+$('saveMoodBtn').onclick=addOrUpdateMood;
+$('cancelMoodEditBtn').onclick=clearMoodInputs;
+
+// start
+boot();
+</script>
+</body>
+</html>
