@@ -81,6 +81,18 @@ tbody tr td:last-child{border-radius:0 12px 12px 0}
   .btn{padding:8px}
   input,select{font-size:10px}
 }
+
+/* responsive tracks table */
+table.resp{width:100%;border-collapse:separate;border-spacing:0 8px;font-size:11px}
+@media(max-width:720px){
+  #tracksTbl thead{display:none}
+  #tracksTbl tbody tr{display:block;padding:8px;border-radius:12px}
+  #tracksTbl tbody td{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;border:none;padding:6px 10px}
+  #tracksTbl tbody td::before{content:attr(data-label); color:var(--mu); flex:0 0 110px; text-transform:none}
+  #tracksTbl tbody td:last-child{justify-content:flex-end}
+}
+/* make long filenames wrap */
+td,th{word-wrap:break-word;word-break:break-word}
 </style>
 </head>
 <body>
@@ -245,7 +257,7 @@ tbody tr td:last-child{border-radius:0 12px 12px 0}
     </div>
     <div class="small">Tombol <b>Set Default</b> akan memaksa path <code>/music/&lt;filename&gt;</code>. Upload juga menambah sebagai path <code>/music/&lt;filename&gt;</code> (copy manual file ke folder itu).</div>
 
-    <div class="table-wrap"><table id="tracksTbl" style="margin-top:10px">
+    <div class="table-wrap"><table id="tracksTbl" class="resp" style="margin-top:10px">
       <thead><tr><th>Alias</th><th>File/URL</th><th style="width:120px">Status</th><th style="width:280px;text-align:right">Aksi</th></tr></thead>
       <tbody id="tracksTbody"></tbody>
     </table></div>
@@ -280,6 +292,7 @@ function showToast(msg,type='ok',undoCb=null){
 // Helper absolute path (fix base path on GitHub Pages)
 const ABS = (p) => new URL(p, location.href).href;
 const BGM=['one_last_fight','pixel_quest','night_run','retro_city','dungeon_loop','boss_rush','ocean_drive','sky_high','stealth_ops','calm_focus'];
+const BGM_SET=new Set(BGM.flatMap(n=>[n+'.mp3',n+'.wav']));
 const buildFallback=(ext='.mp3')=>BGM.map(n=>({name:n.replace(/_/g,' ').toUpperCase(),file:`${n}${ext}`,url:ABS(`backsound/${n}${ext}`),fallback:true}));
 
 // ===== DB =====
@@ -289,29 +302,44 @@ if(!DB.tracks||DB.tracks.length===0){DB.tracks=buildFallback('.mp3');}
 const save=()=>localStorage.setItem('tlg_db_local_final',JSON.stringify(DB));
 
 // ===== Sanitize / migrate old blob & relative URLs =====
+
 function sanitizeDB(){
   let changed=false;
   if(!Array.isArray(DB.tracks)) DB.tracks=[];
   DB.tracks.forEach(t=>{
     if(!t) return;
-    // filename fallback kuat
     let def=(t.file||baseName(t.url)||'').trim();
+    // Determine if this should live in backsound or music
+    const isBack = !!t.fallback || /\/backsound\//i.test(t.url||'') || BGM_SET.has(def.toLowerCase());
     if(/^blob:/i.test(t.url||'')){
-      if(def){ t.url=ABS('music/'+def); delete t._blobFile; changed=true; }
-    }else if(t.url && !/^https?:/i.test(t.url)){ t.url = ABS(t.url.startsWith('backsound/')?t.url:('music/'+def));
-      // url relatif menjadi music/filename
-      if(def){ t.url=ABS('music/'+def); changed=true; }
+      // convert blobs: custom goes to /music, fallback goes to /backsound
+      if(def){
+        t.url = isBack ? ABS('backsound/'+def) : ABS('music/'+def);
+        delete t._blobFile;
+        changed=true;
+      }
+    }else if(!/^https?:/i.test(t.url||'')){
+      // relative: normalize to proper folder
+      if(def){
+        t.url = isBack ? ABS('backsound/'+def) : ABS('music/'+def);
+        changed=true;
+      }
+    }else{
+      // absolute http(s): keep but fix if it mistakenly points to wrong folder and we know it's fallback
+      if(isBack && !/\/backsound\//i.test(t.url)){
+        t.url = ABS('backsound/'+def); changed=true;
+      }
     }
     if(!t.file && def){ t.file=def; changed=true; }
   });
   if(DB.tracks.length===0){ DB.tracks=buildFallback('.mp3'); changed=true; }
-  // Perbaiki trackIndex
   if(DB.settings.trackIndex==null || DB.settings.trackIndex<0 || DB.settings.trackIndex>=DB.tracks.length){
     DB.settings.trackIndex=0; changed=true;
   }
   if(changed) save();
 }
 sanitizeDB();
+
 
 // ===== Music Player =====
 let cur=null,lastLen=0;
@@ -363,11 +391,13 @@ function renderTracks(){
   const tb=$('tracksTbody'); tb.innerHTML='';
   DB.tracks.forEach((t,i)=>{
     const isDef=(t.file===DB.settings.defaultMusicFile);
+    const alias=t.name||t.file||'';
+    const file=t.file||t.url||'';
     const tr=document.createElement('tr');
-    tr.innerHTML=`<td>${t.name||t.file||'-'}</td>
-                  <td>${t.file||t.url||'-'}</td>
-                  <td>${isDef?'<span class="badge def">Default</span>':''}</td>
-                  <td class="actions">
+    tr.innerHTML=`<td data-label="Alias">${alias}</td>
+                  <td data-label="File/URL">${file}</td>
+                  <td data-label="Status">${isDef?'<span class="badge def">Default</span>':''}</td>
+                  <td data-label="Aksi" class="actions">
                     <button class="btn ghost" onclick="setDefault(${i})">Set Default</button>
                     <button class="btn bad" onclick="delTrack(${i})">Hapus</button>
                   </td>`;
@@ -383,12 +413,14 @@ window.setDefault=(i)=>{
   const t=DB.tracks[i];
   let def=(t.file || baseName(t.url) || '').trim();
   if(!def){ showToast('Track tidak memiliki filename','bad'); return; }
-  // Normalisasi URL ke /music/<filename> jika bukan http/https dan bukan backsound
-  if(/^blob:/i.test(t.url||'')){ t.url=ABS('music/'+def); delete t._blobFile; }
-  else if(t.url && !/^https?:/i.test(t.url)){ t.url = ABS(t.url.startsWith('backsound/')?t.url:('music/'+def));
-    t.url=ABS('music/'+def);
+  const isBack = !!t.fallback || /\/backsound\//i.test(t.url||'') || BGM_SET.has(def.toLowerCase());
+  if(/^blob:/i.test(t.url||'')){
+    t.url = isBack ? ABS('backsound/'+def) : ABS('music/'+def);
+    delete t._blobFile;
+  }else if(!/^https?:/i.test(t.url||'')){
+    t.url = isBack ? ABS('backsound/'+def) : ABS('music/'+def);
   }
-  t.file = def; // pastikan ada
+  t.file = def;
   DB.settings.defaultMusicFile=def;
   DB.settings.trackIndex=i;
   save();
@@ -493,7 +525,8 @@ $('setDefaultBtn').onclick=()=>{
   const def=($('defaultMusicFile').value||'').trim();
   if(!def){ showToast('Isi nama file default','bad'); return; }
   const url=ABS('music/'+def);
-  let idx=DB.tracks.findIndex(t=>(t.file||'')===def || (t.url||'')===url || (t.url||'').endsWith('/'+def));
+  let idx=DB.tracks.findIndex(t=>((t.file||'')===def || (t.url||'').endsWith('/'+def)) && /\/music\//i.test(t.url||''));
+  if(idx<0){ idx=DB.tracks.findIndex(t=>(t.file||'')===def || (t.url||'')===url || (t.url||'').endsWith('/'+def)); }
   if(idx<0){ DB.tracks.push({name:def,url,file:def}); idx=DB.tracks.length-1; }
   DB.settings.defaultMusicFile=def; DB.settings.trackIndex=idx;
   save(); updateMusicUI(true); renderTracks(); if(DB.settings.musicOn) startMusic();
